@@ -137,7 +137,7 @@ class Page1(QWidget):
         self.setLayout(main_layout)
 
     def _open_template(self):
-        template_path = resource_path("D:\cod\AI\cosmic-GUI\/test\模板\cosmic-自动填充-模板.xlsx")
+        template_path = resource_path("../../docs/test_data/模板/cosmic-自动填充-模板.xlsx")
         if os.path.exists(template_path):
             os.startfile(template_path)
         else:

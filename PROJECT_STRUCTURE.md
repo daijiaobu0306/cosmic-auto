@@ -24,15 +24,14 @@ cosmic-GUI/
 │   │   └── llm_fill_worker.py
 │   ├── gui.py                 # GUI入口
 │   └── requirements.txt        # 依赖
-├── test/                      # 测试及生成文件
-│   ├── __pycache__/           # Python缓存文件
-│   ├── 模板/                   # Excel模板文件
-│   │   ├── cosmic-自动填充-test1.xlsx
-│   │   ├── cosmic-自动填充-test2.xlsx
-│   │   └── cosmic-自动填充-模板.xlsx
-│   └── 大模型填充后.xlsx       # 生成的结果文件
-├── docs/                      # 文档
-│   └── README.txt
+├── docs/                      # 文档及测试数据
+│   ├── README.txt
+│   └── test_data/              # 测试数据（模板/生成文件）
+│       ├── 模板/
+│       │   ├── cosmic-自动填充-test1.xlsx
+│       │   ├── cosmic-自动填充-test2.xlsx
+│       │   └── cosmic-自动填充-模板.xlsx
+│       └── 大模型填充后.xlsx
 └── PROJECT_STRUCTURE.md        # 本文件
 ```
 
@@ -41,7 +40,7 @@ cosmic-GUI/
 | 目录 | 说明 |
 |------|------|
 | src/ | 所有源代码，包括 core/ui/utils/workers 和入口文件 |
-| test/ | 测试数据、模板文件、生成的Excel文件、pycache |
+| docs/ | 文档和测试数据（包括Excel模板和生成文件） |
 | docs/ | 文档和说明文件 |
 
 ## 关键文件速查
