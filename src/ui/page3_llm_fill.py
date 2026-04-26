@@ -61,9 +61,17 @@ class Page3(QWidget):
         self.log_edit.setPlaceholderText("日志输出区域...")
         layout.addWidget(self.log_edit)
 
+        nav_layout = QHBoxLayout()
         self.btn_prev = QPushButton("上一步")
         self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
-        layout.addWidget(self.btn_prev)
+        nav_layout.addWidget(self.btn_prev)
+
+        self.btn_next = QPushButton("下一步")
+        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
+        nav_layout.addWidget(self.btn_next)
+
+        nav_layout.addStretch()
+        layout.addLayout(nav_layout)
 
         self.setLayout(layout)
 

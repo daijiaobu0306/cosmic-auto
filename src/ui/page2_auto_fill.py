@@ -54,8 +54,7 @@ class Page2(QWidget):
         nav_layout.addWidget(self.btn_prev)
 
         self.btn_next = QPushButton("下一步")
-        self.btn_next.clicked.connect(self._go_next)
-        self.btn_next.setEnabled(False)
+        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
         nav_layout.addWidget(self.btn_next)
 
         nav_layout.addStretch()
@@ -91,12 +90,5 @@ class Page2(QWidget):
 
     def _auto_fill_finished(self):
         self.btn_start.setEnabled(True)
-        self.btn_next.setEnabled(True)
         self.on_success_callback()
-        self.log_edit.append("\n【自动填空完成，可进行下一步】")
-
-    def _go_next(self):
-        if self.auto_fill_thread and self.auto_fill_thread.isFinished():
-            self.stacked_widget.setCurrentIndex(2)
-        else:
-            QMessageBox.warning(self, "警告", "请先执行步骤1（自动填空）")
+        self.log_edit.append("\n【自动填空完成】")

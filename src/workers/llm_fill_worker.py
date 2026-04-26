@@ -1,25 +1,36 @@
 """LLMFill 后台工作线程"""
-import sys
 import asyncio
+import threading
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 
 from core.llm_fill import llm_fill_async
 
 
-class OutputRedirector(QObject):
-    """输出重定向"""
+class ThrottledPrinter(QObject):
+    """带节流功能的日志输出，避免信号淹没GUI"""
     text_written = pyqtSignal(str)
 
-    def __init__(self, callback):
+    def __init__(self, interval=0.1):
         super().__init__()
-        self.callback = callback
+        self.interval = interval
+        self.buffer = []
+        self.lock = threading.Lock()
+        self._timer = None
 
-    def write(self, text):
-        if text.strip():
-            self.callback(text)
+    def print(self, text):
+        with self.lock:
+            self.buffer.append(text)
+            if self._timer is None:
+                self._timer = threading.Timer(self.interval, self._flush)
+                self._timer.start()
 
-    def flush(self):
-        pass
+    def _flush(self):
+        with self.lock:
+            output = '\n'.join(self.buffer) if self.buffer else ''
+            self.buffer.clear()
+            self._timer = None
+        if output:
+            self.text_written.emit(output)
 
 
 class LLMFillWorker(QThread):
@@ -35,16 +46,14 @@ class LLMFillWorker(QThread):
         self.output_file = output_file
 
     def run(self):
-        old_stdout = sys.stdout
-        sys.stdout = OutputRedirector(self._emit_output)
+        self._throttled_printer = ThrottledPrinter(interval=0.1)
+        self._throttled_printer.text_written.connect(self.text_written.emit)
         try:
             asyncio.run(llm_fill_async(
                 self.api_key, self.model, self.url,
                 self.excel_file, self.output_file,
-                lambda text: self.text_written.emit(text)
+                lambda text: self._throttled_printer.print(text)
             ))
         finally:
-            sys.stdout = old_stdout
-
-    def _emit_output(self, text):
-        self.text_written.emit(text)
+            if self._throttled_printer._timer:
+                self._throttled_printer._timer.cancel()
