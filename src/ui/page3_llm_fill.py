@@ -63,11 +63,11 @@ class Page3(QWidget):
 
         nav_layout = QHBoxLayout()
         self.btn_prev = QPushButton("上一步")
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
+        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
         nav_layout.addWidget(self.btn_prev)
 
         self.btn_next = QPushButton("下一步")
-        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
+        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(4))
         nav_layout.addWidget(self.btn_next)
 
         nav_layout.addStretch()

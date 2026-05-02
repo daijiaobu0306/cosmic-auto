@@ -10,7 +10,7 @@
 
 | 阶段 | Task | 名称 | 状态 |
 |------|------|------|------|
-| Phase 1 | T1 | 人天计算器 | ☐ 待开发 |
+| Phase 1 | T1 | 人天计算器 | ✅ 已完成 |
 | Phase 1 | T2 | AI 识图（核心逻辑 + Worker） | ☐ 待开发 |
 | Phase 1 | T3 | TXT 解析 + 生成 Excel（核心逻辑 + Worker） | ☐ 待开发 |
 | Phase 1 | T4 | AI 识图 + 生成 Excel（UI 页面） | ☐ 待开发 |
@@ -113,7 +113,10 @@ class PageXxx(QWidget):
 |------|------|------|
 | 新增 | `src/ui/page_calculator.py` | 计算器页面 |
 | 修改 | `src/ui/main_window.py` | 添加页面到 stacked widget |
-| 修改 | 前一页的导航按钮 | 添加「跳转到计算器」按钮 |
+| 修改 | `src/ui/page1_welcome.py` | 添加「打开计算器」按钮 |
+| 修改 | `src/ui/page2_auto_fill.py` | 更新导航索引 |
+| 修改 | `src/ui/page3_llm_fill.py` | 更新导航索引 |
+| 修改 | `src/ui/page4_excel_to_word.py` | 更新导航索引 |
 
 #### 核心逻辑
 
@@ -153,10 +156,10 @@ def calculate_workload(project_amount: float, deduction_rate: float, daily_price
 
 #### 验收标准
 
-- [ ] 输入三个参数后点击计算，正确显示行数和实际预算
-- [ ] 边界值：扣减率 0%、扣减率接近 100%、金额为 0 时有合理提示
-- [ ] 复制结果按钮可将结果复制到剪贴板
-- [ ] 页面可通过 stacked widget 索引正常切换
+- [x] 输入三个参数后点击计算，正确显示行数和实际预算
+- [x] 边界值：扣减率 0%、扣减率接近 100%、金额为 0 时有合理提示
+- [x] 复制结果按钮可将结果复制到剪贴板
+- [x] 页面可通过 stacked widget 索引正常切换
 
 ---
 

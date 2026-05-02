@@ -94,7 +94,25 @@ class Page1(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        self.btn_open_template = QPushButton("📄 打开模板")
+        self.btn_calculator = QPushButton("打开计算器")
+        self.btn_calculator.setFixedSize(120, 36)
+        self.btn_calculator.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_calculator.setStyleSheet("""
+            QPushButton {
+                background-color: #ecf0f1;
+                color: #2c3e50;
+                border: none;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #d5dbdb;
+            }
+        """)
+        self.btn_calculator.clicked.connect(self._go_calculator)
+        btn_layout.addWidget(self.btn_calculator)
+
+        self.btn_open_template = QPushButton("打开模板")
         self.btn_open_template.setFixedSize(120, 36)
         self.btn_open_template.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_open_template.setStyleSheet("""
@@ -144,5 +162,9 @@ class Page1(QWidget):
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "警告", f"找不到模板文件:\n{template_path}")
 
-    def _go_next(self):
+    def _go_calculator(self):
+        """跳转到人天计算器"""
         self.stacked_widget.setCurrentIndex(1)
+
+    def _go_next(self):
+        self.stacked_widget.setCurrentIndex(2)

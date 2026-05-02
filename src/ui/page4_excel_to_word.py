@@ -181,7 +181,7 @@ class Page4(QWidget):
                 background-color: #e5e7eb;
             }
         """)
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
+        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
         nav_layout.addWidget(self.btn_prev)
 
         nav_layout.addStretch()
