@@ -1,10 +1,9 @@
 """Page2 - 自动填空页面"""
-import os
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTextEdit, QFileDialog, QMessageBox
 )
-from PyQt6.QtCore import QObject
+from PyQt6.QtCore import Qt
 
 from workers.auto_fill_worker import AutoFillWorker
 
@@ -19,45 +18,155 @@ class Page2(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout()
-        layout.setSpacing(15)
+        layout.setContentsMargins(20, 15, 20, 15)
+        layout.setSpacing(10)
+
+        # 标题
+        title = QLabel("自动填充")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 3px 0;
+        """)
+        layout.addWidget(title)
+
+        # 副标题
+        subtitle = QLabel("规则引擎填写 H/J/L 列")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        subtitle.setStyleSheet("""
+            font-size: 10px;
+            color: #7f8c8d;
+            padding-bottom: 3px;
+        """)
+        layout.addWidget(subtitle)
 
         file_layout = QHBoxLayout()
-        file_layout.addWidget(QLabel("选择文件:"))
+        file_label = QLabel("选择文件:")
+        file_label.setStyleSheet("font-size: 11px; color: #495057; min-width: 70px;")
+        file_layout.addWidget(file_label)
         self.file_edit = QLineEdit()
         self.file_edit.setPlaceholderText("请选择 Excel 文件 (.xlsx)")
+        self.file_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 6px 10px;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                font-size: 11px;
+                color: #2c3e50;
+                background-color: white;
+            }
+            QLineEdit:focus { border-color: #3498db; }
+        """)
         file_layout.addWidget(self.file_edit)
         self.btn_browse = QPushButton("浏览")
+        self.btn_browse.setFixedSize(60, 28)
+        self.btn_browse.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_browse.setStyleSheet("""
+            QPushButton {
+                background-color: #ecf0f1;
+                color: #2c3e50;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #d5dbdb; }
+        """)
         self.btn_browse.clicked.connect(self._browse_file)
         file_layout.addWidget(self.btn_browse)
         layout.addLayout(file_layout)
 
         sheet_layout = QHBoxLayout()
-        sheet_layout.addWidget(QLabel("定位 Sheet 表:"))
+        sheet_label = QLabel("定位 Sheet 表:")
+        sheet_label.setStyleSheet("font-size: 11px; color: #495057; min-width: 70px;")
+        sheet_layout.addWidget(sheet_label)
         self.sheet_edit = QLineEdit()
         self.sheet_edit.setText("cosmic模块汇总")
         self.sheet_edit.setPlaceholderText("请输入 Sheet 名称")
+        self.sheet_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 6px 10px;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                font-size: 11px;
+                color: #2c3e50;
+                background-color: white;
+            }
+            QLineEdit:focus { border-color: #3498db; }
+        """)
         sheet_layout.addWidget(self.sheet_edit)
         layout.addLayout(sheet_layout)
 
         self.btn_start = QPushButton("开始运行")
+        self.btn_start.setFixedSize(100, 30)
+        self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_start.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #2980b9; }
+            QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
+        """)
         self.btn_start.clicked.connect(self._start_auto_fill)
-        layout.addWidget(self.btn_start)
+        layout.addWidget(self.btn_start, 0, Qt.AlignmentFlag.AlignCenter)
 
         self.log_edit = QTextEdit()
         self.log_edit.setReadOnly(True)
         self.log_edit.setPlaceholderText("日志输出区域...")
+        self.log_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 10px;
+                color: #495057;
+                padding: 6px;
+            }
+        """)
         layout.addWidget(self.log_edit)
 
         nav_layout = QHBoxLayout()
         self.btn_prev = QPushButton("上一步")
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
+        self.btn_prev.setFixedSize(80, 28)
+        self.btn_prev.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_prev.setStyleSheet("""
+            QPushButton {
+                background-color: #ecf0f1;
+                color: #2c3e50;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #d5dbdb; }
+        """)
+        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
         nav_layout.addWidget(self.btn_prev)
 
+        nav_layout.addStretch()
+
         self.btn_next = QPushButton("下一步")
-        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
+        self.btn_next.setFixedSize(80, 28)
+        self.btn_next.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_next.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #2980b9; }
+        """)
+        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(5))
         nav_layout.addWidget(self.btn_next)
 
-        nav_layout.addStretch()
         layout.addLayout(nav_layout)
         self.setLayout(layout)
 

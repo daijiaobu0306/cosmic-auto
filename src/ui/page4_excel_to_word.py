@@ -3,7 +3,7 @@ import os
 import subprocess
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QTextEdit, QFileDialog, QMessageBox, QFrame
+    QPushButton, QTextEdit, QFileDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
 
@@ -23,195 +23,156 @@ class Page4(QWidget):
 
         # 主布局
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(20, 15, 20, 15)
+        main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # 容器框架 - 固定宽度600px，水平居中
-        container = QFrame()
-        container.setFixedWidth(600)
-        container_layout = QVBoxLayout()
-        container_layout.setContentsMargins(0, 0, 0, 0)
-        container_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-
-        # 主标题
+        # 标题
         title = QLabel("Excel 转 Word")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("""
-            font-size: 28px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 3px 0;
         """)
-        container_layout.addWidget(title)
+        main_layout.addWidget(title)
 
         # 副标题
         subtitle = QLabel("将 COSMIC 表格转换为 Word 文档")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("""
-            font-size: 18px;
-            font-weight: 400;
-            color: #6b7280;
-            margin-bottom: 48px;
+            font-size: 10px;
+            color: #7f8c8d;
+            padding-bottom: 3px;
         """)
-        container_layout.addWidget(subtitle)
+        main_layout.addWidget(subtitle)
 
         # 文件选择区域
-        file_section = QFrame()
-        file_layout = QVBoxLayout()
-        file_layout.setSpacing(24)
-
-        # Excel 文件选择行
-        excel_row = QHBoxLayout()
-        excel_row.setSpacing(16)
+        file_layout = QHBoxLayout()
+        file_label = QLabel("Excel 文件:")
+        file_label.setStyleSheet("font-size: 11px; color: #495057; min-width: 70px;")
+        file_layout.addWidget(file_label)
 
         self.excel_file_edit = QLineEdit()
         self.excel_file_edit.setPlaceholderText("请选择 Excel 文件")
-        self.excel_file_edit.setFixedHeight(44)
         self.excel_file_edit.setStyleSheet("""
             QLineEdit {
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 16px;
-                padding: 0 12px;
+                padding: 6px 10px;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                font-size: 11px;
+                color: #2c3e50;
                 background-color: white;
             }
+            QLineEdit:focus { border-color: #3498db; }
         """)
-        excel_row.addWidget(self.excel_file_edit)
+        file_layout.addWidget(self.excel_file_edit)
 
         self.btn_browse = QPushButton("浏览")
-        self.btn_browse.setFixedSize(80, 44)
+        self.btn_browse.setFixedSize(60, 28)
         self.btn_browse.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_browse.setStyleSheet("""
             QPushButton {
-                background-color: #f3f4f6;
-                color: #374151;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 16px;
+                background-color: #ecf0f1;
+                color: #2c3e50;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                font-size: 11px;
             }
-            QPushButton:hover {
-                background-color: #e5e7eb;
-            }
+            QPushButton:hover { background-color: #d5dbdb; }
         """)
         self.btn_browse.clicked.connect(self._browse_excel)
-        excel_row.addWidget(self.btn_browse)
+        file_layout.addWidget(self.btn_browse)
 
-        file_layout.addLayout(excel_row)
+        main_layout.addLayout(file_layout)
 
-        # 文件选择标签
+        # 文件提示
         file_hint = QLabel("请选择已完成填充的 Excel 文件（.xlsx）")
-        file_hint.setStyleSheet("font-size: 14px; color: #9ca3af;")
-        file_layout.addWidget(file_hint)
-
-        file_section.setLayout(file_layout)
-        container_layout.addWidget(file_section)
-
-        # 与按钮的间距
-        container_layout.addSpacing(48)
+        file_hint.setStyleSheet("font-size: 10px; color: #7f8c8d;")
+        main_layout.addWidget(file_hint)
 
         # 按钮区域
         btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(16)
-        btn_layout.setContentsMargins(0, 0, 0, 0)
         btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.btn_convert = QPushButton("开始转换")
-        self.btn_convert.setFixedSize(160, 44)
+        self.btn_convert.setFixedSize(120, 30)
         self.btn_convert.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_convert.setStyleSheet("""
             QPushButton {
-                background-color: #3b82f6;
+                background-color: #3498db;
                 color: white;
                 border: none;
-                border-radius: 6px;
-                font-size: 16px;
-                font-weight: 500;
+                border-radius: 5px;
+                font-size: 12px;
+                font-weight: bold;
             }
-            QPushButton:hover {
-                background-color: #2563eb;
-            }
-            QPushButton:disabled {
-                background-color: #93c5fd;
-            }
+            QPushButton:hover { background-color: #2980b9; }
+            QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
         """)
         self.btn_convert.clicked.connect(self._start_convert)
         btn_layout.addWidget(self.btn_convert)
 
-        container_layout.addLayout(btn_layout)
-
-        # 与日志的间距
-        container_layout.addSpacing(32)
+        main_layout.addLayout(btn_layout)
 
         # 日志区域
         self.log_edit = QTextEdit()
         self.log_edit.setReadOnly(True)
         self.log_edit.setPlaceholderText("日志输出区域...")
-        self.log_edit.setFixedHeight(160)
         self.log_edit.setStyleSheet("""
             QTextEdit {
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                font-size: 14px;
-                padding: 12px;
-                background-color: white;
-                line-height: 24px;
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 10px;
+                color: #495057;
+                padding: 6px;
             }
         """)
-        container_layout.addWidget(self.log_edit)
-
-        # 与底部导航的间距
-        container_layout.addSpacing(32)
+        main_layout.addWidget(self.log_edit)
 
         # 底部导航按钮
         nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(16)
 
         self.btn_prev = QPushButton("← 上一步")
-        self.btn_prev.setFixedSize(160, 44)
+        self.btn_prev.setFixedSize(80, 28)
         self.btn_prev.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_prev.setStyleSheet("""
             QPushButton {
-                background-color: #f3f4f6;
-                color: #374151;
-                border: none;
-                border-radius: 6px;
-                font-size: 16px;
+                background-color: #ecf0f1;
+                color: #2c3e50;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                font-size: 11px;
             }
-            QPushButton:hover {
-                background-color: #e5e7eb;
-            }
+            QPushButton:hover { background-color: #d5dbdb; }
         """)
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
+        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(5))
         nav_layout.addWidget(self.btn_prev)
 
         nav_layout.addStretch()
 
-        self.btn_open_folder = QPushButton("📂 打开所在目录")
-        self.btn_open_folder.setFixedSize(160, 44)
+        self.btn_open_folder = QPushButton("打开所在目录")
+        self.btn_open_folder.setFixedSize(100, 28)
         self.btn_open_folder.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_open_folder.setStyleSheet("""
             QPushButton {
-                background-color: #10b981;
+                background-color: #27ae60;
                 color: white;
                 border: none;
-                border-radius: 6px;
-                font-size: 16px;
+                border-radius: 4px;
+                font-size: 11px;
             }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-            QPushButton:disabled {
-                background-color: #6ee7b7;
-            }
+            QPushButton:hover { background-color: #229954; }
+            QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
         """)
         self.btn_open_folder.clicked.connect(self._open_output_folder)
         self.btn_open_folder.setEnabled(False)
         nav_layout.addWidget(self.btn_open_folder)
 
-        container_layout.addLayout(nav_layout)
-
-        container.setLayout(container_layout)
-        main_layout.addWidget(container)
+        main_layout.addLayout(nav_layout)
 
         self.setLayout(main_layout)
 

@@ -17,17 +17,17 @@ class PageCalculator(QWidget):
     def _setup_ui(self):
         # 主布局
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(20, 15, 20, 15)
+        main_layout.setSpacing(8)
 
         # ===== 标题区域 =====
         title = QLabel("COSMIC 人天单价计算器")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("""
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #2c3e50;
-            padding: 5px 0;
+            padding: 3px 0;
         """)
         main_layout.addWidget(title)
 
@@ -35,9 +35,9 @@ class PageCalculator(QWidget):
         subtitle = QLabel("根据项目金额和单价，快速估算所需编写的 COSMIC 功能点行数")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("""
-            font-size: 11px;
+            font-size: 10px;
             color: #7f8c8d;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
         """)
         main_layout.addWidget(subtitle)
 
@@ -50,15 +50,15 @@ class PageCalculator(QWidget):
         btn_layout.addStretch()
 
         self.calc_btn = QPushButton("计  算")
-        self.calc_btn.setFixedSize(120, 36)
+        self.calc_btn.setFixedSize(100, 30)
         self.calc_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.calc_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
                 color: white;
                 border: none;
-                border-radius: 6px;
-                font-size: 13px;
+                border-radius: 5px;
+                font-size: 12px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -87,7 +87,7 @@ class PageCalculator(QWidget):
         copy_layout.addStretch()
 
         self.copy_btn = QPushButton("复制结果")
-        self.copy_btn.setFixedSize(100, 32)
+        self.copy_btn.setFixedSize(80, 28)
         self.copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.copy_btn.setEnabled(False)
         self.copy_btn.setStyleSheet("""
@@ -96,7 +96,7 @@ class PageCalculator(QWidget):
                 color: #2c3e50;
                 border: 1px solid #bdc3c7;
                 border-radius: 4px;
-                font-size: 12px;
+                font-size: 11px;
             }
             QPushButton:hover {
                 background-color: #d5dbdb;
@@ -118,7 +118,7 @@ class PageCalculator(QWidget):
         nav_layout = QHBoxLayout()
 
         self.btn_back = QPushButton("返回欢迎页")
-        self.btn_back.setFixedSize(100, 32)
+        self.btn_back.setFixedSize(80, 28)
         self.btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_back.setStyleSheet("""
             QPushButton {
@@ -126,7 +126,7 @@ class PageCalculator(QWidget):
                 color: #2c3e50;
                 border: 1px solid #bdc3c7;
                 border-radius: 4px;
-                font-size: 12px;
+                font-size: 11px;
             }
             QPushButton:hover {
                 background-color: #d5dbdb;
@@ -151,34 +151,34 @@ class PageCalculator(QWidget):
             QFrame {
                 background-color: #f8f9fa;
                 border: 1px solid #e9ecef;
-                border-radius: 8px;
-                padding: 15px;
+                border-radius: 6px;
+                padding: 10px;
             }
         """)
 
         form_layout = QFormLayout()
-        form_layout.setSpacing(10)
-        form_layout.setContentsMargins(15, 15, 15, 15)
+        form_layout.setSpacing(6)
+        form_layout.setContentsMargins(10, 10, 10, 10)
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
 
         # 标签样式
         label_style = """
-            font-size: 12px;
+            font-size: 11px;
             color: #495057;
-            padding-right: 8px;
-            min-width: 100px;
+            padding-right: 6px;
+            min-width: 90px;
         """
 
         # 输入框样式
         input_style = """
             QLineEdit {
-                padding: 8px 12px;
+                padding: 6px 10px;
                 border: 1px solid #dee2e6;
                 border-radius: 4px;
-                font-size: 12px;
+                font-size: 11px;
                 color: #2c3e50;
                 background-color: white;
-                min-width: 180px;
+                min-width: 150px;
             }
             QLineEdit:focus {
                 border-color: #3498db;
@@ -233,36 +233,36 @@ class PageCalculator(QWidget):
             QFrame#resultCard {
                 background-color: #f0f7ff;
                 border: 2px solid #3498db;
-                border-radius: 8px;
-                padding: 15px;
+                border-radius: 6px;
+                padding: 10px;
             }
         """)
 
         result_layout = QVBoxLayout()
-        result_layout.setSpacing(10)
+        result_layout.setSpacing(6)
 
         # 结果标题
         result_title = QLabel("计算结果")
         result_title.setStyleSheet("""
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #2c3e50;
-            padding-bottom: 5px;
+            padding-bottom: 4px;
             border-bottom: 1px solid #bdd7ee;
         """)
         result_layout.addWidget(result_title)
 
         # 结果内容
         result_content_layout = QHBoxLayout()
-        result_content_layout.setSpacing(30)
+        result_content_layout.setSpacing(20)
 
         # 实际预算
         budget_layout = QVBoxLayout()
-        budget_layout.setSpacing(4)
+        budget_layout.setSpacing(3)
 
         budget_label = QLabel("实际预算")
         budget_label.setStyleSheet("""
-            font-size: 10px;
+            font-size: 9px;
             color: #7f8c8d;
         """)
         budget_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -270,7 +270,7 @@ class PageCalculator(QWidget):
 
         self.budget_value = QLabel("¥ 0")
         self.budget_value.setStyleSheet("""
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #2c3e50;
         """)
@@ -282,7 +282,7 @@ class PageCalculator(QWidget):
         # 分隔线
         separator = QLabel()
         separator.setFixedWidth(2)
-        separator.setFixedHeight(40)
+        separator.setFixedHeight(30)
         separator.setStyleSheet("""
             background-color: #bdd7ee;
             border: none;
@@ -291,11 +291,11 @@ class PageCalculator(QWidget):
 
         # 需编写行数
         lines_layout = QVBoxLayout()
-        lines_layout.setSpacing(4)
+        lines_layout.setSpacing(3)
 
         lines_label = QLabel("需编写行数")
         lines_label.setStyleSheet("""
-            font-size: 10px;
+            font-size: 9px;
             color: #7f8c8d;
         """)
         lines_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -303,7 +303,7 @@ class PageCalculator(QWidget):
 
         self.lines_value = QLabel("0 行")
         self.lines_value.setStyleSheet("""
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #3498db;
         """)
