@@ -21,6 +21,7 @@ src/
 │   ├── ai_recognize.py             # AI 识图 → TXT
 │   ├── txt_to_excel.py             # TXT → Excel（含合并单元格）
 │   ├── ddl_parser.py               # DDL 解析
+│   ├── flowchart_renderer.py       # 纯 Python 时序图渲染（Pillow）
 │   └── config_store.py             # 全局配置单例
 ├── ui/                             # PyQt6 页面
 │   ├── main_window.py              # 主窗口（导航中枢 + Navigator）
@@ -33,12 +34,14 @@ src/
 │   ├── page2_auto_fill.py          # 自动填充
 │   ├── page3_llm_fill.py           # LLM 填充
 │   ├── page4_excel_to_word.py      # Excel 转 Word
+│   ├── page_excel_to_word_flow.py  # Excel 转 Word（含流程图）
 │   └── page_llm_field_gen.py       # LLM 数据字段生成
 ├── workers/                        # QThread 后台线程
 │   ├── auto_fill_worker.py
 │   ├── llm_fill_worker.py
 │   ├── llm_field_gen_worker.py
 │   ├── excel_to_word_worker.py
+│   ├── excel_to_word_flow_worker.py
 │   ├── ai_recognize_worker.py
 │   └── txt_to_excel_worker.py
 └── utils/
@@ -61,7 +64,8 @@ src/
        │   ├─ LLM 填充 (index 6)
        │   └─ LLM 字段生成 (index 7)
        └─ 编写后
-           └─ Excel 转 Word (index 8)
+           ├─ Excel 转 Word (index 8)
+           └─ Excel 转 Word（含流程图） (index 9)
 ```
 
 **导航规则：**
@@ -80,6 +84,7 @@ src/
 | 编写中 | LLM 填充 | 大模型填写 M 列 | page3_llm_fill.py |
 | 编写中 | LLM 字段生成 | 大模型填写 M 列（支持 DDL 辅助） | page_llm_field_gen.py |
 | 编写后 | Excel 转 Word | COSMIC Excel → Word 文档 | page4_excel_to_word.py |
+| 编写后 | Excel 转 Word（含流程图） | COSMIC Excel → Word + Mermaid 流程图 | page_excel_to_word_flow.py |
 
 ## 添加新功能指南
 
@@ -245,8 +250,7 @@ class YourWorker(QThread):
 ## 依赖
 
 - Python 3.10+
-- PyQt6, openpyxl, python-docx, aiohttp
-- 可选：Node.js + @mermaid-js/mermaid-cli（流程图渲染）
+- PyQt6, openpyxl, python-docx, aiohttp, Pillow
 
 ## 开发文档
 

@@ -12,10 +12,11 @@ from .page2_auto_fill import Page2
 from .page3_llm_fill import Page3
 from .page4_excel_to_word import Page4
 from .page_llm_field_gen import PageLLMFieldGen
+from .page_excel_to_word_flow import PageExcelToWordFlow
 
 
 # 功能页面在 stacked_widget 中的 index，按目录顺序排列
-FEATURE_ORDER = [2, 3, 4, 5, 6, 7, 8]
+FEATURE_ORDER = [2, 3, 4, 5, 6, 7, 8, 9]
 
 
 class Navigator:
@@ -97,6 +98,10 @@ class MainWindow(QWidget):
         # 页面 8：Excel 转 Word
         self.page_excel_to_word = Page4(self.navigator)
         self.stacked.addWidget(self.page_excel_to_word)
+
+        # 页面 9：Excel 转 Word（含流程图）
+        self.page_excel_to_word_flow = PageExcelToWordFlow(self.navigator)
+        self.stacked.addWidget(self.page_excel_to_word_flow)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)

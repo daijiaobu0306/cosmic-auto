@@ -22,6 +22,7 @@ CATEGORIES = [
     ]),
     ("编写后", [
         ("Excel 转 Word", "COSMIC Excel → Word 文档", 8),
+        ("Excel 转 Word（含流程图）", "COSMIC Excel → Word 文档 + 自动流程图", 9),
     ]),
 ]
 
