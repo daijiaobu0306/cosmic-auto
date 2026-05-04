@@ -6,12 +6,13 @@ from PyQt6.QtWidgets import (
     QFormLayout
 )
 from PyQt6.QtCore import Qt
+from .nav_bar import create_nav_bar
 
 
 class PageCalculator(QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, navigator):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.navigator = navigator
         self._setup_ui()
 
     def _setup_ui(self):
@@ -50,7 +51,7 @@ class PageCalculator(QWidget):
         btn_layout.addStretch()
 
         self.calc_btn = QPushButton("计  算")
-        self.calc_btn.setFixedSize(100, 30)
+        self.calc_btn.setMinimumSize(100, 30)
         self.calc_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.calc_btn.setStyleSheet("""
             QPushButton {
@@ -87,7 +88,7 @@ class PageCalculator(QWidget):
         copy_layout.addStretch()
 
         self.copy_btn = QPushButton("复制结果")
-        self.copy_btn.setFixedSize(80, 28)
+        self.copy_btn.setMinimumSize(80, 28)
         self.copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.copy_btn.setEnabled(False)
         self.copy_btn.setStyleSheet("""
@@ -115,29 +116,8 @@ class PageCalculator(QWidget):
         main_layout.addLayout(copy_layout)
 
         # ===== 底部导航 =====
-        nav_layout = QHBoxLayout()
-
-        self.btn_back = QPushButton("返回欢迎页")
-        self.btn_back.setFixedSize(80, 28)
-        self.btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_back.setStyleSheet("""
-            QPushButton {
-                background-color: #ecf0f1;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #d5dbdb;
-                border-color: #95a5a6;
-            }
-        """)
-        self.btn_back.clicked.connect(self._go_back)
-        nav_layout.addWidget(self.btn_back)
-
-        nav_layout.addStretch()
-        main_layout.addLayout(nav_layout)
+        nav = create_nav_bar(self.navigator, self)
+        main_layout.addLayout(nav)
 
         self.setLayout(main_layout)
 
@@ -423,10 +403,6 @@ class PageCalculator(QWidget):
             }
         """)
 
-    def _go_back(self):
-        """返回欢迎页"""
-        if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)
 
 
 # 独立运行测试
@@ -436,7 +412,12 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    window = PageCalculator()
+    class _DummyNav:
+        def navigate_prev(self, idx): pass
+        def navigate_next(self, idx): pass
+        def navigate_to_directory(self): pass
+
+    window = PageCalculator(_DummyNav())
     window.setWindowTitle("COSMIC 人天单价计算器")
     window.resize(600, 500)
     window.show()

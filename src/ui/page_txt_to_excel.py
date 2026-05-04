@@ -11,12 +11,13 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
 from workers.txt_to_excel_worker import TxtToExcelWorker
+from .nav_bar import create_nav_bar
 
 
 class PageTxtToExcel(QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, navigator):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.navigator = navigator
         self._excel_output_path = ""
         self._setup_ui()
 
@@ -54,7 +55,7 @@ class PageTxtToExcel(QWidget):
         btn_layout.addStretch()
 
         self.preview_btn = QPushButton("预览")
-        self.preview_btn.setFixedSize(70, 28)
+        self.preview_btn.setMinimumSize(70, 28)
         self.preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.preview_btn.setStyleSheet("""
             QPushButton {
@@ -70,7 +71,7 @@ class PageTxtToExcel(QWidget):
         btn_layout.addWidget(self.preview_btn)
 
         self.export_btn = QPushButton("导出 Excel")
-        self.export_btn.setFixedSize(90, 28)
+        self.export_btn.setMinimumSize(90, 28)
         self.export_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.export_btn.setStyleSheet("""
             QPushButton {
@@ -87,7 +88,7 @@ class PageTxtToExcel(QWidget):
         btn_layout.addWidget(self.export_btn)
 
         self.open_excel_btn = QPushButton("打开文件")
-        self.open_excel_btn.setFixedSize(70, 28)
+        self.open_excel_btn.setMinimumSize(70, 28)
         self.open_excel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.open_excel_btn.setEnabled(False)
         self.open_excel_btn.setStyleSheet("""
@@ -197,29 +198,8 @@ class PageTxtToExcel(QWidget):
         main_layout.addWidget(self.status_label)
 
         # ===== 底部导航 =====
-        nav_layout = QHBoxLayout()
-
-        self.btn_back = QPushButton("返回欢迎页")
-        self.btn_back.setFixedSize(80, 28)
-        self.btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_back.setStyleSheet("""
-            QPushButton {
-                background-color: #ecf0f1;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #d5dbdb;
-                border-color: #95a5a6;
-            }
-        """)
-        self.btn_back.clicked.connect(self._go_back)
-        nav_layout.addWidget(self.btn_back)
-
-        nav_layout.addStretch()
-        main_layout.addLayout(nav_layout)
+        nav = create_nav_bar(self.navigator, self)
+        main_layout.addLayout(nav)
 
         self.setLayout(main_layout)
 
@@ -267,7 +247,7 @@ class PageTxtToExcel(QWidget):
         self.txt_path_input.setStyleSheet(input_style)
 
         txt_browse_btn = QPushButton("选择文件")
-        txt_browse_btn.setFixedSize(70, 28)
+        txt_browse_btn.setMinimumSize(70, 28)
         txt_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         txt_browse_btn.setStyleSheet("""
             QPushButton {
@@ -451,10 +431,6 @@ class PageTxtToExcel(QWidget):
         scrollbar = self.log_area.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
-    def _go_back(self):
-        """返回欢迎页"""
-        if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)
 
 
 # 独立运行测试
@@ -464,7 +440,12 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    window = PageTxtToExcel()
+    class _DummyNav:
+        def navigate_prev(self, idx): pass
+        def navigate_next(self, idx): pass
+        def navigate_to_directory(self): pass
+
+    window = PageTxtToExcel(_DummyNav())
     window.setWindowTitle("TXT 生成 COSMIC Excel")
     window.resize(700, 600)
     window.show()

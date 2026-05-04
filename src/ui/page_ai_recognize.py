@@ -9,12 +9,13 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from workers.ai_recognize_worker import AIRecognizeWorker
+from .nav_bar import create_nav_bar
 
 
 class PageAIRecognize(QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, navigator):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.navigator = navigator
         self.worker = None
         self._output_path = ""
         self._setup_ui()
@@ -55,7 +56,7 @@ class PageAIRecognize(QWidget):
         btn_layout.addStretch()
 
         self.start_btn = QPushButton("开始识别")
-        self.start_btn.setFixedSize(100, 30)
+        self.start_btn.setMinimumSize(100, 30)
         self.start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.start_btn.setStyleSheet("""
             QPushButton {
@@ -128,29 +129,8 @@ class PageAIRecognize(QWidget):
         main_layout.addWidget(result_card)
 
         # ===== 底部导航 =====
-        nav_layout = QHBoxLayout()
-
-        self.btn_back = QPushButton("返回欢迎页")
-        self.btn_back.setFixedSize(80, 28)
-        self.btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_back.setStyleSheet("""
-            QPushButton {
-                background-color: #ecf0f1;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #d5dbdb;
-                border-color: #95a5a6;
-            }
-        """)
-        self.btn_back.clicked.connect(self._go_back)
-        nav_layout.addWidget(self.btn_back)
-
-        nav_layout.addStretch()
-        main_layout.addLayout(nav_layout)
+        nav = create_nav_bar(self.navigator, self)
+        main_layout.addLayout(nav)
 
         self.setLayout(main_layout)
 
@@ -226,7 +206,7 @@ class PageAIRecognize(QWidget):
         self.folder_input.setToolTip("包含 JPG/PNG 截图的文件夹路径")
 
         self.folder_btn = QPushButton("选择文件夹")
-        self.folder_btn.setFixedSize(80, 28)
+        self.folder_btn.setMinimumSize(80, 28)
         self.folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.folder_btn.setStyleSheet("""
             QPushButton {
@@ -325,7 +305,7 @@ class PageAIRecognize(QWidget):
         btn_layout.setSpacing(8)
 
         self.open_btn = QPushButton("打开功能清单")
-        self.open_btn.setFixedSize(100, 28)
+        self.open_btn.setMinimumSize(100, 28)
         self.open_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.open_btn.setEnabled(False)
         self.open_btn.setStyleSheet("""
@@ -348,7 +328,7 @@ class PageAIRecognize(QWidget):
         btn_layout.addWidget(self.open_btn)
 
         self.confirm_btn = QPushButton("确认完成，生成 Excel")
-        self.confirm_btn.setFixedSize(130, 28)
+        self.confirm_btn.setMinimumSize(130, 28)
         self.confirm_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.confirm_btn.setEnabled(False)
         self.confirm_btn.setStyleSheet("""
@@ -378,15 +358,13 @@ class PageAIRecognize(QWidget):
 
     def _confirm_and_generate(self):
         """从识别结果区域跳转到 TXT 生成 Excel 页面"""
-        if self.stacked_widget and self._output_path:
-            # 获取系统名称
+        if self._output_path:
             system_name = self.system_name_input.text().strip()
-            # 获取目标页面并设置数据
-            target_page = self.stacked_widget.widget(3)
+            # 获取目标页面并设置数据（PageTxtToExcel 在 index 4）
+            target_page = self.navigator._stacked.widget(4)
             if target_page and hasattr(target_page, 'set_txt_path'):
                 target_page.set_txt_path(self._output_path, system_name)
-            # 跳转到 TXT 生成 Excel 页面
-            self.stacked_widget.setCurrentIndex(3)
+            self.navigator.navigate_to(4)
 
     def _select_folder(self):
         """选择截图文件夹"""
@@ -499,10 +477,6 @@ class PageAIRecognize(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "错误", f"无法打开文件: {str(e)}")
 
-    def _go_back(self):
-        """返回欢迎页"""
-        if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)
 
 
 # 独立运行测试
@@ -512,7 +486,14 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    window = PageAIRecognize()
+    class _DummyNav:
+        def navigate_prev(self, idx): pass
+        def navigate_next(self, idx): pass
+        def navigate_to_directory(self): pass
+        def navigate_to(self, idx): pass
+        _stacked = None
+
+    window = PageAIRecognize(_DummyNav())
     window.setWindowTitle("AI 识图生成功能清单")
     window.resize(700, 600)
     window.show()

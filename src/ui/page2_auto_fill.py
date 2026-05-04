@@ -6,12 +6,13 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from workers.auto_fill_worker import AutoFillWorker
+from .nav_bar import create_nav_bar
 
 
 class Page2(QWidget):
-    def __init__(self, stacked_widget, on_success_callback):
+    def __init__(self, navigator, on_success_callback):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.navigator = navigator
         self.on_success_callback = on_success_callback
         self.auto_fill_thread = None
         self._setup_ui()
@@ -61,7 +62,7 @@ class Page2(QWidget):
         """)
         file_layout.addWidget(self.file_edit)
         self.btn_browse = QPushButton("浏览")
-        self.btn_browse.setFixedSize(60, 28)
+        self.btn_browse.setMinimumSize(60, 28)
         self.btn_browse.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_browse.setStyleSheet("""
             QPushButton {
@@ -99,7 +100,7 @@ class Page2(QWidget):
         layout.addLayout(sheet_layout)
 
         self.btn_start = QPushButton("开始运行")
-        self.btn_start.setFixedSize(100, 30)
+        self.btn_start.setMinimumSize(100, 30)
         self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_start.setStyleSheet("""
             QPushButton {
@@ -132,42 +133,8 @@ class Page2(QWidget):
         """)
         layout.addWidget(self.log_edit)
 
-        nav_layout = QHBoxLayout()
-        self.btn_prev = QPushButton("上一步")
-        self.btn_prev.setFixedSize(80, 28)
-        self.btn_prev.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_prev.setStyleSheet("""
-            QPushButton {
-                background-color: #ecf0f1;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover { background-color: #d5dbdb; }
-        """)
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
-        nav_layout.addWidget(self.btn_prev)
-
-        nav_layout.addStretch()
-
-        self.btn_next = QPushButton("下一步")
-        self.btn_next.setFixedSize(80, 28)
-        self.btn_next.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_next.setStyleSheet("""
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover { background-color: #2980b9; }
-        """)
-        self.btn_next.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(5))
-        nav_layout.addWidget(self.btn_next)
-
-        layout.addLayout(nav_layout)
+        nav = create_nav_bar(self.navigator, self)
+        layout.addLayout(nav)
         self.setLayout(layout)
 
     def _browse_file(self):

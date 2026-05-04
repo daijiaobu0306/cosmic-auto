@@ -8,24 +8,20 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from workers.excel_to_word_worker import ExcelToWordWorker
+from .nav_bar import create_nav_bar
 
 
 class Page4(QWidget):
-    def __init__(self, stacked_widget):
+    def __init__(self, navigator):
         super().__init__()
-        self.stacked_widget = stacked_widget
+        self.navigator = navigator
         self.excel_to_word_thread = None
         self._setup_ui()
 
     def _setup_ui(self):
-        # 设置整体背景
-        self.setStyleSheet("background-color: #f5f5f5;")
-
-        # 主布局
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(20, 15, 20, 15)
         main_layout.setSpacing(10)
-        main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 标题
         title = QLabel("Excel 转 Word")
@@ -70,7 +66,7 @@ class Page4(QWidget):
         file_layout.addWidget(self.excel_file_edit)
 
         self.btn_browse = QPushButton("浏览")
-        self.btn_browse.setFixedSize(60, 28)
+        self.btn_browse.setMinimumSize(60, 28)
         self.btn_browse.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_browse.setStyleSheet("""
             QPushButton {
@@ -97,7 +93,7 @@ class Page4(QWidget):
         btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.btn_convert = QPushButton("开始转换")
-        self.btn_convert.setFixedSize(120, 30)
+        self.btn_convert.setMinimumSize(120, 30)
         self.btn_convert.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_convert.setStyleSheet("""
             QPushButton {
@@ -114,48 +110,8 @@ class Page4(QWidget):
         self.btn_convert.clicked.connect(self._start_convert)
         btn_layout.addWidget(self.btn_convert)
 
-        main_layout.addLayout(btn_layout)
-
-        # 日志区域
-        self.log_edit = QTextEdit()
-        self.log_edit.setReadOnly(True)
-        self.log_edit.setPlaceholderText("日志输出区域...")
-        self.log_edit.setStyleSheet("""
-            QTextEdit {
-                background-color: #f8f9fa;
-                border: 1px solid #e9ecef;
-                border-radius: 4px;
-                font-family: Consolas, "Courier New", monospace;
-                font-size: 10px;
-                color: #495057;
-                padding: 6px;
-            }
-        """)
-        main_layout.addWidget(self.log_edit)
-
-        # 底部导航按钮
-        nav_layout = QHBoxLayout()
-
-        self.btn_prev = QPushButton("← 上一步")
-        self.btn_prev.setFixedSize(80, 28)
-        self.btn_prev.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_prev.setStyleSheet("""
-            QPushButton {
-                background-color: #ecf0f1;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 11px;
-            }
-            QPushButton:hover { background-color: #d5dbdb; }
-        """)
-        self.btn_prev.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(5))
-        nav_layout.addWidget(self.btn_prev)
-
-        nav_layout.addStretch()
-
         self.btn_open_folder = QPushButton("打开所在目录")
-        self.btn_open_folder.setFixedSize(100, 28)
+        self.btn_open_folder.setMinimumSize(100, 28)
         self.btn_open_folder.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_open_folder.setStyleSheet("""
             QPushButton {
@@ -170,9 +126,34 @@ class Page4(QWidget):
         """)
         self.btn_open_folder.clicked.connect(self._open_output_folder)
         self.btn_open_folder.setEnabled(False)
-        nav_layout.addWidget(self.btn_open_folder)
+        btn_layout.addWidget(self.btn_open_folder)
 
-        main_layout.addLayout(nav_layout)
+        main_layout.addLayout(btn_layout)
+
+        # 日志区域
+        self.log_edit = QTextEdit()
+        self.log_edit.setReadOnly(True)
+        self.log_edit.setPlaceholderText("日志输出区域...")
+        self.log_edit.setSizePolicy(
+            self.log_edit.sizePolicy().horizontalPolicy(),
+            self.log_edit.sizePolicy().verticalPolicy()
+        )
+        self.log_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 10px;
+                color: #495057;
+                padding: 6px;
+            }
+        """)
+        main_layout.addWidget(self.log_edit, 1)
+
+        # 底部导航
+        nav = create_nav_bar(self.navigator, self)
+        main_layout.addLayout(nav)
 
         self.setLayout(main_layout)
 
@@ -190,7 +171,6 @@ class Page4(QWidget):
             QMessageBox.warning(self, "警告", "请选择 Excel 文件")
             return
 
-        # 自动生成输出文件名：原文件名_转换后.docx
         base_name = os.path.splitext(os.path.basename(excel_file))[0]
         output_dir = os.path.dirname(excel_file)
         if not output_dir:
