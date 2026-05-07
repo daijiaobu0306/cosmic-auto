@@ -188,6 +188,8 @@ class PageLLMFieldGen(QWidget):
         ddl_layout.addWidget(self.ddl_status)
 
         ddl_group.setLayout(ddl_layout)
+        ddl_group.toggled.connect(self._on_ddl_toggled)
+        self._ddl_group = ddl_group
         layout.addWidget(ddl_group)
 
         # Start Button
@@ -282,6 +284,10 @@ class PageLLMFieldGen(QWidget):
             self.ddl_status.setText(f"解析失败: {str(e)}")
             self.ddl_status.setStyleSheet("font-size: 10px; color: #e74c3c;")
 
+    def _on_ddl_toggled(self, checked):
+        if not checked:
+            self._ddl_context = None
+
     def _start_gen(self):
         api_key = self.api_key_edit.text().strip()
         model = self.model_edit.text().strip()
@@ -301,10 +307,15 @@ class PageLLMFieldGen(QWidget):
         self.btn_start.setEnabled(False)
         self.btn_open_file.hide()
 
-        if self._ddl_context:
-            self.log_edit.append("📎 已加载 DDL 上下文，将参考数据库表结构生成字段\n")
+        ddl_enabled = self._ddl_group.isChecked() and self._ddl_context is not None
+        self.log_edit.append(f"📋 配置信息：")
+        self.log_edit.append(f"  模型: {model}")
+        self.log_edit.append(f"  输入: {excel_file}")
+        self.log_edit.append(f"  输出: {output_file}")
+        self.log_edit.append(f"  DDL辅助: {'✅ 已开启' if ddl_enabled else '❌ 未开启'}")
+        self.log_edit.append("")
 
-        self.llm_thread = LLMFieldGenWorker(api_key, model, url, excel_file, output_file, self._ddl_context)
+        self.llm_thread = LLMFieldGenWorker(api_key, model, url, excel_file, output_file, self._ddl_context if ddl_enabled else None)
         self.llm_thread.text_written.connect(self._append_log)
         self.llm_thread.finished.connect(self._on_finished)
         self.llm_thread.start()

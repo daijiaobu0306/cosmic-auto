@@ -238,4 +238,8 @@ class PageExcelToWordFlow(QWidget):
         if not self.output_file or not os.path.exists(self.output_file):
             QMessageBox.warning(self, "提示", "生成文件不存在，请先完成转换")
             return
-        subprocess.run(['explorer', '/select,', self.output_file])
+        folder = os.path.dirname(os.path.abspath(self.output_file))
+        if os.name == 'nt':
+            os.startfile(folder)
+        else:
+            subprocess.run(['xdg-open', folder])

@@ -1,6 +1,5 @@
 """Page4 - Excel转Word页面"""
 import os
-import subprocess
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTextEdit, QFileDialog, QMessageBox
@@ -197,4 +196,5 @@ class Page4(QWidget):
 
     def _open_output_folder(self):
         if hasattr(self, 'output_file') and os.path.exists(self.output_file):
-            subprocess.run(['explorer', '/select,', self.output_file])
+            folder = os.path.dirname(os.path.abspath(self.output_file))
+            os.startfile(folder)

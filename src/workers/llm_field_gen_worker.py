@@ -1,34 +1,49 @@
 """LLMFieldGenWorker 后台工作线程"""
 import asyncio
 import threading
-from PyQt6.QtCore import QThread, pyqtSignal, QObject
+from PyQt6.QtCore import QThread, QTimer, pyqtSignal, QObject
 
 from core.llm_field_gen import llm_field_gen_async
 
 
 class ThrottledPrinter(QObject):
-    """带节流功能的日志输出，避免信号淹没GUI"""
-    text_written = pyqtSignal(str)
+    """带节流功能的日志输出，避免信号淹没GUI
 
-    def __init__(self, interval=0.1):
+    工作线程调用 print() → emit message_received（跨线程信号）
+    主线程收到后启动 QTimer → 触发 _flush() → emit text_written
+    保证 QTimer 只在主线程启停。
+    """
+    text_written = pyqtSignal(str)
+    message_received = pyqtSignal()
+
+    def __init__(self, interval_ms=100):
         super().__init__()
-        self.interval = interval
-        self.buffer = []
-        self.lock = threading.Lock()
-        self._timer = None
+        self._buffer = []
+        self._lock = threading.Lock()
+        self._flush_requested = False
+
+        self._timer = QTimer(self)
+        self._timer.setInterval(interval_ms)
+        self._timer.timeout.connect(self._flush)
+
+        self.message_received.connect(self._schedule_flush)
 
     def print(self, text):
-        with self.lock:
-            self.buffer.append(text)
-            if self._timer is None:
-                self._timer = threading.Timer(self.interval, self._flush)
-                self._timer.start()
+        with self._lock:
+            self._buffer.append(text)
+        self.message_received.emit()
+
+    def _schedule_flush(self):
+        """仅在主线程运行，安全启停 QTimer"""
+        if not self._timer.isActive():
+            self._timer.start()
 
     def _flush(self):
-        with self.lock:
-            output = '\n'.join(self.buffer) if self.buffer else ''
-            self.buffer.clear()
-            self._timer = None
+        with self._lock:
+            output = '\n'.join(self._buffer) if self._buffer else ''
+            self._buffer.clear()
+            if not self._buffer:
+                self._timer.stop()
         if output:
             self.text_written.emit(output)
 
@@ -46,9 +61,10 @@ class LLMFieldGenWorker(QThread):
         self.output_file = output_file
         self.ddl_context = ddl_context
 
+        self._throttled_printer = ThrottledPrinter(interval_ms=100)
+        self._throttled_printer.text_written.connect(self.text_written)
+
     def run(self):
-        self._throttled_printer = ThrottledPrinter(interval=0.1)
-        self._throttled_printer.text_written.connect(self.text_written.emit)
         try:
             asyncio.run(llm_field_gen_async(
                 self.api_key, self.model, self.url,
@@ -57,5 +73,4 @@ class LLMFieldGenWorker(QThread):
                 self.ddl_context
             ))
         finally:
-            if self._throttled_printer._timer:
-                self._throttled_printer._timer.cancel()
+            self._throttled_printer._timer.stop()

@@ -1,11 +1,16 @@
 """功能目录页 - 展示所有功能模块，支持点击跳转"""
 import os
+import requests
+from urllib.parse import quote
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
+    QInputDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
 
 from utils import resource_path
+
+FEEDBACK_URL = "http://120.55.98.247:5000/feedback"
 
 
 # 功能定义：(分类, 名称, 描述, stacked_widget_index)
@@ -44,6 +49,29 @@ class DirectoryPage(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(30, 20, 30, 20)
         main_layout.setSpacing(12)
+
+        # 反馈按钮（独立一行）
+        feedback_row = QHBoxLayout()
+        feedback_btn = QPushButton("问题反馈")
+        feedback_btn.setMinimumSize(80, 28)
+        feedback_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        feedback_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+                padding: 0 10px;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        feedback_btn.clicked.connect(self._show_feedback_dialog)
+        feedback_row.addWidget(feedback_btn)
+        feedback_row.addStretch()
+        main_layout.addLayout(feedback_row)
 
         # 标题
         title = QLabel("COSMIC 功能目录")
@@ -232,5 +260,19 @@ class DirectoryPage(QWidget):
         if os.path.exists(template_path):
             os.startfile(template_path)
         else:
-            from PyQt6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "警告", f"找不到模板文件:\n{template_path}")
+
+    def _show_feedback_dialog(self):
+        msg, ok = QInputDialog.getMultiLineText(
+            self, "问题反馈", "请输入您在使用中遇到的问题或bug：", ""
+        )
+        if ok and msg.strip():
+            try:
+                url = f"{FEEDBACK_URL}?msg={quote(msg.strip())}"
+                resp = requests.get(url, timeout=10)
+                if resp.status_code == 200:
+                    QMessageBox.information(self, "感谢反馈", "您的反馈已提交，我们会尽快处理！")
+                else:
+                    QMessageBox.warning(self, "提交失败", f"服务器返回错误：{resp.status_code}")
+            except Exception as e:
+                QMessageBox.warning(self, "提交失败", f"网络错误：{str(e)}")
