@@ -37,13 +37,14 @@ class LLMFillWorker(QThread):
     """大模型填充工作线程"""
     text_written = pyqtSignal(str)
 
-    def __init__(self, api_key, model, url, excel_file, output_file):
+    def __init__(self, api_key, model, url, excel_file, output_file, custom_system_prompt=None):
         super().__init__()
         self.api_key = api_key
         self.model = model
         self.url = url
         self.excel_file = excel_file
         self.output_file = output_file
+        self.custom_system_prompt = custom_system_prompt
 
     def run(self):
         self._throttled_printer = ThrottledPrinter(interval=0.1)
@@ -52,7 +53,8 @@ class LLMFillWorker(QThread):
             asyncio.run(llm_fill_async(
                 self.api_key, self.model, self.url,
                 self.excel_file, self.output_file,
-                lambda text: self._throttled_printer.print(text)
+                lambda text: self._throttled_printer.print(text),
+                custom_system_prompt=self.custom_system_prompt,
             ))
         finally:
             if self._throttled_printer._timer:

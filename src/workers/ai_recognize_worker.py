@@ -11,7 +11,8 @@ class AIRecognizeWorker(QThread):
     finished_with_result = pyqtSignal(str)  # 完成时发送结果文本
 
     def __init__(self, image_folder, system_name, system_desc,
-                 api_key, api_url, model_name, output_path):
+                 api_key, api_url, model_name, output_path,
+                 custom_system_prompt=None, custom_user_prompt=None):
         super().__init__()
         self.image_folder = image_folder
         self.system_name = system_name
@@ -20,6 +21,8 @@ class AIRecognizeWorker(QThread):
         self.api_url = api_url
         self.model_name = model_name
         self.output_path = output_path
+        self.custom_system_prompt = custom_system_prompt
+        self.custom_user_prompt = custom_user_prompt
 
     def _emit_log(self, text):
         """直接发送日志信号"""
@@ -36,7 +39,9 @@ class AIRecognizeWorker(QThread):
                 self.api_key,
                 self.api_url,
                 self.model_name,
-                self._emit_log
+                self._emit_log,
+                custom_system_prompt=self.custom_system_prompt,
+                custom_user_prompt=self.custom_user_prompt,
             ))
 
             # 保存 TXT 文件

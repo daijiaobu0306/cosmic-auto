@@ -6,11 +6,32 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTextEdit, QFileDialog, QMessageBox, QGroupBox
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 
 from core.ddl_parser import parse_ddl_folder, build_ddl_context, format_ddl_summary
+from core.prompt_manager import load_prompts
 from workers.llm_field_gen_worker import LLMFieldGenWorker
+from .prompt_edit_dialog import PromptEditDialog
 from .nav_bar import create_nav_bar
+
+# 右上角按钮通用样式
+_PROMPT_BTN_STYLE = """
+    QPushButton {
+        background-color: white;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 11px;
+        padding: 4px 12px;
+    }
+    QPushButton:hover {
+        background-color: #f8f9fa;
+        border-color: #adb5bd;
+    }
+    QPushButton:pressed {
+        background-color: #e9ecef;
+    }
+"""
 
 
 class PageLLMFieldGen(QWidget):
@@ -24,29 +45,48 @@ class PageLLMFieldGen(QWidget):
     def set_input_file(self, path):
         self.excel_file_edit.setText(path)
 
+    def resizeEvent(self, event):
+        """窗口大小变化时，重新定位标题、副标题和按钮"""
+        super().resizeEvent(event)
+        w = self.width()
+        btn_w = self.prompt_btn.sizeHint().width()
+        title_w = self._title.sizeHint().width()
+        self._title.setGeometry((w - title_w) // 2, 15, title_w, 24)
+        sub_w = self._subtitle.sizeHint().width()
+        self._subtitle.setGeometry((w - sub_w) // 2, 38, sub_w, 16)
+        self.prompt_btn.move(w - btn_w - 10, 12)
+
     def _setup_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(10)
 
-        title = QLabel("LLM 数据字段生成")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("""
+        # 标题（绝对定位，保证在整个窗口宽度内居中）
+        self._title = QLabel("LLM 数据字段生成", self)
+        self._title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._title.setStyleSheet("""
             font-size: 14px;
             font-weight: bold;
             color: #2c3e50;
-            padding: 3px 0;
+            background: transparent;
         """)
-        layout.addWidget(title)
 
-        subtitle = QLabel("根据 L 列数据组名称，调用大模型生成 M 列数据字段（支持 DDL 辅助）")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("""
+        self._subtitle = QLabel("根据 L 列数据组名称，调用大模型生成 M 列数据字段（支持 DDL 辅助）", self)
+        self._subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._subtitle.setStyleSheet("""
             font-size: 10px;
             color: #7f8c8d;
-            padding-bottom: 3px;
+            background: transparent;
         """)
-        layout.addWidget(subtitle)
+
+        # 右上角按钮（绝对定位）
+        self.prompt_btn = QPushButton("自定义提示词", self)
+        self.prompt_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prompt_btn.setStyleSheet(_PROMPT_BTN_STYLE)
+        self.prompt_btn.clicked.connect(self._open_prompt_dialog)
+
+        # 顶部留出空间给标题和副标题
+        layout.addSpacing(55)
 
         input_style = """
             QLineEdit {
@@ -253,6 +293,11 @@ class PageLLMFieldGen(QWidget):
 
         self.setLayout(layout)
 
+    def _open_prompt_dialog(self):
+        """打开自定义提示词编辑对话框"""
+        dialog = PromptEditDialog("llm_field_gen", self)
+        dialog.exec()
+
     def _browse_excel(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择 Excel 文件", "", "Excel Files (*.xlsx)")
         if path:
@@ -315,7 +360,15 @@ class PageLLMFieldGen(QWidget):
         self.log_edit.append(f"  DDL辅助: {'✅ 已开启' if ddl_enabled else '❌ 未开启'}")
         self.log_edit.append("")
 
-        self.llm_thread = LLMFieldGenWorker(api_key, model, url, excel_file, output_file, self._ddl_context if ddl_enabled else None)
+        # 读取自定义提示词
+        prompts = load_prompts()
+        field_prompts = prompts.get("llm_field_gen", {})
+
+        self.llm_thread = LLMFieldGenWorker(
+            api_key, model, url, excel_file, output_file,
+            self._ddl_context if ddl_enabled else None,
+            custom_system_prompt=field_prompts.get("system_prompt"),
+        )
         self.llm_thread.text_written.connect(self._append_log)
         self.llm_thread.finished.connect(self._on_finished)
         self.llm_thread.start()

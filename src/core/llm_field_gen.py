@@ -10,36 +10,21 @@ SYSTEM_PROMPT = (
     "仅输出字段名，字段之间用分号（;）分隔，不要任何解释、标点或额外内容,必须生成中文，"
     "每次必须生成新的组合！每次生成需要有差异性。"
     "强约束：禁止使用模型缓存，温度设置最高，较高的随机性"
-)
-
-SYSTEM_PROMPT_RETRY = (
-    "你是一个数据库字段设计专家。我会提供一个'数据组'名称，请你据此生成4-6个不重复的数据字段，"
-    "仅输出字段名，字段之间用分号（;）分隔，不要任何解释、标点或额外内容,必须生成中文，"
-    "每次必须生成新的组合！每次生成需要有差异性。"
-    "强约束：禁止使用模型缓存，温度设置最高，较高的随机性"
     "（必须生成全新字段组合！绝对不要和之前任何结果重复！可以增加字段解决！）"
+    "示例：xxx;xxx;xxx;xxx;"
+    "禁止生成序号，禁止生成无关紧要的内容，严格按照模板执行"
 )
 
 
-def _build_system_prompt(ddl_context: str = None) -> str:
-    base = SYSTEM_PROMPT
+def _build_system_prompt(ddl_context: str = None, custom_prompt: str = None) -> str:
+    base = custom_prompt if custom_prompt else SYSTEM_PROMPT
     if ddl_context:
         base += f"\n\n参考数据库表结构：\n{ddl_context}\n请优先使用上述表中的实际字段名，并适当扩展。"
     return base
 
 
-def _build_system_prompt_retry(ddl_context: str = None) -> str:
-    base = SYSTEM_PROMPT_RETRY
-    if ddl_context:
-        base += f"\n\n参考数据库表结构：\n{ddl_context}\n请优先使用上述表中的实际字段名，并适当扩展。"
-    return base
-
-
-async def _call_llm_once(session, semaphore, api_key, model, url, prompt_text, attempt=0, ddl_context=None):
-    if attempt > 0:
-        system_content = _build_system_prompt_retry(ddl_context)
-    else:
-        system_content = _build_system_prompt(ddl_context)
+async def _call_llm_once(session, semaphore, api_key, model, url, prompt_text, attempt=0, ddl_context=None, custom_system_prompt=None):
+    system_content = _build_system_prompt(ddl_context, custom_prompt=custom_system_prompt)
     user_content = prompt_text
 
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -66,11 +51,11 @@ async def _call_llm_once(session, semaphore, api_key, model, url, prompt_text, a
             return f"[EXCEPTION: {str(e)}]"
 
 
-async def _generate_unique_result(session, semaphore, api_key, model, url, original_input, seen_results, seen_lock, ddl_context=None, row_index=None):
+async def _generate_unique_result(session, semaphore, api_key, model, url, original_input, seen_results, seen_lock, ddl_context=None, row_index=None, custom_system_prompt=None):
     MAX_RETRY = 2
     for attempt in range(MAX_RETRY + 1):
         t0 = time.time()
-        result = await _call_llm_once(session, semaphore, api_key, model, url, original_input, attempt, ddl_context)
+        result = await _call_llm_once(session, semaphore, api_key, model, url, original_input, attempt, ddl_context, custom_system_prompt=custom_system_prompt)
         elapsed = time.time() - t0
         row_tag = f"行{row_index}" if row_index else ""
         if result.startswith(("[ERROR", "[EXCEPTION")):
@@ -97,7 +82,7 @@ async def _generate_unique_result(session, semaphore, api_key, model, url, origi
     return final_result
 
 
-async def llm_field_gen_async(api_key, model, url, excel_file, output_file, callback_print, ddl_context=None):
+async def llm_field_gen_async(api_key, model, url, excel_file, output_file, callback_print, ddl_context=None, custom_system_prompt=None):
     """异步版本，供 QThread 调用"""
     seen_results = set()
     seen_lock = asyncio.Lock()
@@ -143,7 +128,7 @@ async def llm_field_gen_async(api_key, model, url, excel_file, output_file, call
             else:
                 clean_text = str(text).strip()
                 print(f"  🔄 第{row_num}行 待生成: {clean_text}")
-                tasks.append(_generate_unique_result(session, semaphore, api_key, model, url, clean_text, seen_results, seen_lock, ddl_context, row_index=row_num))
+                tasks.append(_generate_unique_result(session, semaphore, api_key, model, url, clean_text, seen_results, seen_lock, ddl_context, row_index=row_num, custom_system_prompt=custom_system_prompt))
                 need_gen_count += 1
 
         print(f"\n📊 统计：需生成 {need_gen_count} 行，跳过 {skip_count} 行，空行 {empty_count} 行")

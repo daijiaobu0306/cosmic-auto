@@ -4,17 +4,20 @@ import aiohttp
 import pandas as pd
 
 
-async def _call_qwen_once(session, semaphore, api_key, model, url, prompt_text, attempt=0):
+async def _call_qwen_once(session, semaphore, api_key, model, url, prompt_text, attempt=0, custom_system_prompt=None):
     if attempt == 0:
         user_content = prompt_text
     else:
         user_content = f"{prompt_text}（必须生成全新字段组合！绝对不要和之前任何结果重复！可以增加字段解决！）"
 
+    default_system = "你是一个数据库字段设计专家。我会提供一个'数据组'名称，请你据此生成4-6个不重复的数据字段，仅输出字段名，字段之间用分号（;）分隔，不要任何解释、标点或额外内容,必须生成中文，每次必须生成新的组合！每次生成需要有差异性。强约束：禁止使用模型缓存，温度设置最高，较高的随机性（必须生成全新字段组合！绝对不要和之前任何结果重复！可以增加字段解决！）示例：xxx;xxx;xxx;xxx;禁止生成序号，禁止生成无关紧要的内容，严格按照模板执行"
+    system_content = custom_system_prompt if custom_system_prompt else default_system
+
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "你是一个数据库字段设计专家。我会提供一个'数据组'名称，请你据此生成4-6个不重复的数据字段，仅输出字段名，字段之间用分号（;）分隔，不要任何解释、标点或额外内容,必须生成中文，每次必须生成新的组合！每次生成需要有差异性。强约束：禁止使用模型缓存，温度设置最高，较高的随机性"},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": user_content}
         ],
         "extra_body": {"enable_thinking": False}
@@ -32,10 +35,10 @@ async def _call_qwen_once(session, semaphore, api_key, model, url, prompt_text, 
             return f"[EXCEPTION: {str(e)}]"
 
 
-async def _generate_unique_result(session, semaphore, api_key, model, url, original_input, seen_results, seen_lock):
+async def _generate_unique_result(session, semaphore, api_key, model, url, original_input, seen_results, seen_lock, custom_system_prompt=None):
     MAX_RETRY = 2
     for attempt in range(MAX_RETRY + 1):
-        result = await _call_qwen_once(session, semaphore, api_key, model, url, original_input, attempt)
+        result = await _call_qwen_once(session, semaphore, api_key, model, url, original_input, attempt, custom_system_prompt=custom_system_prompt)
         if result.startswith(("[ERROR", "[EXCEPTION")):
             if attempt == MAX_RETRY:
                 print(f"❌ 最终失败 ({original_input}): {result}")
@@ -60,7 +63,7 @@ async def _generate_unique_result(session, semaphore, api_key, model, url, origi
     return final_result
 
 
-async def llm_fill_async(api_key, model, url, excel_file, output_file, callback_print):
+async def llm_fill_async(api_key, model, url, excel_file, output_file, callback_print, custom_system_prompt=None):
     """异步版本，供 QThread 调用"""
     seen_results = set()
     seen_lock = asyncio.Lock()
@@ -90,7 +93,7 @@ async def llm_fill_async(api_key, model, url, excel_file, output_file, callback_
                 print(f"⏭️ 跳过第 {idx+1} 行：M列已有数据")
             else:
                 clean_text = str(text).strip()
-                tasks.append(_generate_unique_result(session, semaphore, api_key, model, url, clean_text, seen_results, seen_lock))
+                tasks.append(_generate_unique_result(session, semaphore, api_key, model, url, clean_text, seen_results, seen_lock, custom_system_prompt=custom_system_prompt))
 
         results = await asyncio.gather(*tasks)
 

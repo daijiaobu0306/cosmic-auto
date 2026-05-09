@@ -2,6 +2,13 @@
 
 COSMIC 功能点度量自动化工具，基于 PyQt6 桌面应用。
 
+> **⚠️ 开发铁律：本项目最终会打包成 exe 分发给所有用户。**
+> 每次开发时必须格外注意以下问题：
+> - **文件路径**：禁止使用相对路径或硬编码项目目录路径。所有用户可写数据（配置、提示词、缓存等）必须存放在用户级目录（Windows: `%APPDATA%/COSMIC-GUI/`，其他: `~/.cosmic-gui/`），确保 exe 在任意电脑上都能正常读写。
+> - **资源文件**：打包后 `__file__` 指向 exe 内部路径，不能用 `os.path.dirname(__file__)` 定位打包外的文件。需要随 exe 分发的资源文件应通过 PyInstaller 的 `--add-data` 打包进 exe。
+> - **依赖库**：所有 `import` 的第三方库都必须能被 PyInstaller 正确识别和打包，避免使用隐式导入。
+> - **路径拼接**：统一使用 `os.path.join()` 拼接路径，不要用字符串拼接或硬编码 `/` 或 `\`。
+
 ## 快速启动
 
 ```bash
@@ -77,14 +84,14 @@ src/
 
 | 分类 | 功能 | 说明 | 对应页面 |
 |------|------|------|----------|
-| 编写前 | 人天计算器 | 项目金额 → COSMIC 行数 | page_calculator.py |
-| 编写前 | AI 识图 | 截图 → 功能清单 TXT | page_ai_recognize.py |
-| 编写前 | TXT 生成 Excel | 功能清单 TXT → COSMIC Excel | page_txt_to_excel.py |
-| 编写中 | 自动填充 | 规则引擎填写 H/J/L 列 | page2_auto_fill.py |
-| 编写中 | LLM 填充 | 大模型填写 M 列 | page3_llm_fill.py |
-| 编写中 | LLM 字段生成 | 大模型填写 M 列（支持 DDL 辅助） | page_llm_field_gen.py |
-| 编写后 | Excel 转 Word | COSMIC Excel → Word 文档 | page4_excel_to_word.py |
-| 编写后 | Excel 转 Word（含流程图） | COSMIC Excel → Word + Mermaid 流程图 | page_excel_to_word_flow.py |
+| 编写前 | 人天计算器 | 项目金额 → COSMIC 行数 | page_calculator.py | 模块1
+| 编写前 | AI 识图 | 截图 → 功能清单 TXT | page_ai_recognize.py | 模块2
+| 编写前 | TXT 生成 Excel | 功能清单 TXT → COSMIC Excel | page_txt_to_excel.py | 模块3
+| 编写中 | 自动填充 | 规则引擎填写 H/J/L 列 | page2_auto_fill.py | 模块4
+| 编写中 | LLM 填充 | 大模型填写 M 列 | page3_llm_fill.py | 模块5
+| 编写中 | LLM 字段生成 | 大模型填写 M 列（支持 DDL 辅助） | page_llm_field_gen.py | 模块6
+| 编写后 | Excel 转 Word | COSMIC Excel → Word 文档 | page4_excel_to_word.py | 模块7
+| 编写后 | Excel 转 Word（含流程图） | COSMIC Excel → Word + Mermaid 流程图 |   page_excel_to_word_flow.py | 模块8
 
 ## 添加新功能指南
 
@@ -247,6 +254,47 @@ class YourWorker(QThread):
 - 日志区域和输入框使用 `stretch` 因子自适应
 - 窗口缩小时内容不堆叠、不遮挡
 
+## 踩坑记录
+
+### 1. 标题居中 + 右上角按钮：不能用 Layout 方案
+
+**场景**：页面标题需要在整个窗口宽度内居中，同时右上角有一个操作按钮（如"自定义提示词"）。
+
+**错误尝试**（均失败）：
+- `[stretch] [title] [btn] [stretch]` — 标题和按钮一起被挤到中间，标题偏左
+- `[title] [stretch] [btn]` — title 是小 label，stretch 把它推到左边
+- 嵌套 `QHBoxLayout`（stretch + title + stretch）放在外层 layout 里 — **嵌套的 QLayout 不会自动扩展填满空间**（不像 QWidget），标题依然偏左
+- 用 `QWidget` 包裹嵌套 layout — QWidget 会扩展，但标题居中区域是「窗口宽度 - 按钮宽度」，不是整个窗口宽度，标题仍然偏左
+
+**根因**：只要标题和按钮在同一个 `QHBoxLayout` 里，按钮占据的右侧空间就会让标题的可用宽度变窄，标题永远无法在整个窗口宽度内居中。
+
+**正确方案**：绝对定位 + `resizeEvent`
+
+```python
+# 标题和按钮作为页面的直接子控件，不放入 layout
+self._title = QLabel("页面标题", self)
+self._subtitle = QLabel("副标题", self)
+self.prompt_btn = QPushButton("操作按钮", self)
+
+# layout 顶部预留空间
+layout.addSpacing(55)
+
+def resizeEvent(self, event):
+    super().resizeEvent(event)
+    w = self.width()
+    # 标题基于整个窗口宽度居中
+    title_w = self._title.sizeHint().width()
+    self._title.setGeometry((w - title_w) // 2, 15, title_w, 24)
+    # 副标题居中对齐
+    sub_w = self._subtitle.sizeHint().width()
+    self._subtitle.setGeometry((w - sub_w) // 2, 38, sub_w, 16)
+    # 按钮贴右上角
+    btn_w = self.prompt_btn.sizeHint().width()
+    self.prompt_btn.move(w - btn_w - 10, 12)
+```
+
+**适用场景**：任何需要标题在整个窗口内居中、同时同行有固定宽度控件（按钮等）的情况。
+
 ## 依赖
 
 - Python 3.10+
@@ -259,4 +307,4 @@ class YourWorker(QThread):
 
 ---
 
-*最后更新：2026-05-04*
+*最后更新：2026-05-09*

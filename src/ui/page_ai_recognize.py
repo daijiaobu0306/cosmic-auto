@@ -6,10 +6,31 @@ from PyQt6.QtWidgets import (
     QLineEdit, QPushButton, QFrame, QMessageBox,
     QFormLayout, QFileDialog, QTextEdit, QGroupBox,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 
 from workers.ai_recognize_worker import AIRecognizeWorker
+from core.prompt_manager import load_prompts
+from .prompt_edit_dialog import PromptEditDialog
 from .nav_bar import create_nav_bar
+
+# 右上角按钮通用样式
+_PROMPT_BTN_STYLE = """
+    QPushButton {
+        background-color: white;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 11px;
+        padding: 4px 12px;
+    }
+    QPushButton:hover {
+        background-color: #f8f9fa;
+        border-color: #adb5bd;
+    }
+    QPushButton:pressed {
+        background-color: #e9ecef;
+    }
+"""
 
 
 class PageAIRecognize(QWidget):
@@ -20,32 +41,49 @@ class PageAIRecognize(QWidget):
         self._output_path = ""
         self._setup_ui()
 
+    def resizeEvent(self, event):
+        """窗口大小变化时，重新定位标题、副标题和按钮"""
+        super().resizeEvent(event)
+        w = self.width()
+        btn_w = self.prompt_btn.sizeHint().width()
+        title_w = self._title.sizeHint().width()
+        self._title.setGeometry((w - title_w) // 2, 15, title_w, 24)
+        sub_w = self._subtitle.sizeHint().width()
+        self._subtitle.setGeometry((w - sub_w) // 2, 38, sub_w, 16)
+        self.prompt_btn.move(w - btn_w - 10, 12)
+
     def _setup_ui(self):
         # 主布局
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(20, 15, 20, 15)
         main_layout.setSpacing(8)
 
-        # ===== 标题区域 =====
-        title = QLabel("AI 识图生成功能清单")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("""
+        # ===== 标题区域（绝对定位，保证在整个窗口宽度内居中） =====
+        self._title = QLabel("AI 识图生成功能清单", self)
+        self._title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._title.setStyleSheet("""
             font-size: 14px;
             font-weight: bold;
             color: #2c3e50;
-            padding: 3px 0;
+            background: transparent;
         """)
-        main_layout.addWidget(title)
 
-        # 副标题
-        subtitle = QLabel("上传软件截图，AI 自动识别功能模块并生成功能清单")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("""
+        self._subtitle = QLabel("上传软件截图，AI 自动识别功能模块并生成功能清单", self)
+        self._subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._subtitle.setStyleSheet("""
             font-size: 10px;
             color: #7f8c8d;
-            padding-bottom: 3px;
+            background: transparent;
         """)
-        main_layout.addWidget(subtitle)
+
+        # 右上角按钮（绝对定位）
+        self.prompt_btn = QPushButton("自定义提示词", self)
+        self.prompt_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prompt_btn.setStyleSheet(_PROMPT_BTN_STYLE)
+        self.prompt_btn.clicked.connect(self._open_prompt_dialog)
+
+        # 顶部留出空间给标题和副标题
+        main_layout.addSpacing(55)
 
         # ===== 输入表单区域 =====
         input_card = self._create_input_card()
@@ -366,6 +404,11 @@ class PageAIRecognize(QWidget):
                 target_page.set_txt_path(self._output_path, system_name)
             self.navigator.navigate_to(4)
 
+    def _open_prompt_dialog(self):
+        """打开自定义提示词编辑对话框"""
+        dialog = PromptEditDialog("ai_recognize", self)
+        dialog.exec()
+
     def _select_folder(self):
         """选择截图文件夹"""
         folder = QFileDialog.getExistingDirectory(
@@ -425,7 +468,10 @@ class PageAIRecognize(QWidget):
         output_path = os.path.join(folder, f"{system_name}_功能清单.txt")
         self._output_path = output_path
 
-        # 创建 Worker
+        # 创建 Worker（读取自定义提示词）
+        prompts = load_prompts()
+        ai_prompts = prompts.get("ai_recognize", {})
+
         self.worker = AIRecognizeWorker(
             image_folder=folder,
             system_name=system_name,
@@ -434,6 +480,8 @@ class PageAIRecognize(QWidget):
             api_url=self.api_url_input.text().strip(),
             model_name=self.model_input.text().strip(),
             output_path=output_path,
+            custom_system_prompt=ai_prompts.get("system_prompt"),
+            custom_user_prompt=ai_prompts.get("user_prompt"),
         )
 
         # 连接信号

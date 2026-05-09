@@ -52,7 +52,8 @@ class LLMFieldGenWorker(QThread):
     """LLM 数据字段生成工作线程"""
     text_written = pyqtSignal(str)
 
-    def __init__(self, api_key, model, url, excel_file, output_file, ddl_context=None):
+    def __init__(self, api_key, model, url, excel_file, output_file, ddl_context=None,
+                 custom_system_prompt=None):
         super().__init__()
         self.api_key = api_key
         self.model = model
@@ -60,6 +61,7 @@ class LLMFieldGenWorker(QThread):
         self.excel_file = excel_file
         self.output_file = output_file
         self.ddl_context = ddl_context
+        self.custom_system_prompt = custom_system_prompt
 
         self._throttled_printer = ThrottledPrinter(interval_ms=100)
         self._throttled_printer.text_written.connect(self.text_written)
@@ -70,7 +72,8 @@ class LLMFieldGenWorker(QThread):
                 self.api_key, self.model, self.url,
                 self.excel_file, self.output_file,
                 lambda text: self._throttled_printer.print(text),
-                self.ddl_context
+                self.ddl_context,
+                custom_system_prompt=self.custom_system_prompt,
             ))
         finally:
             self._throttled_printer._timer.stop()

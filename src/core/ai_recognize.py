@@ -75,6 +75,7 @@ async def _call_vision_api(
     system_prompt: str,
     callback_print=None,
     attempt: int = 0,
+    user_prompt: str = "请识别这张截图中的功能：",
 ) -> str:
     """调用多模态 Vision API 识别单张图片"""
     # 编码图片
@@ -109,7 +110,7 @@ async def _call_vision_api(
 
     # 构造多模态消息内容（嵌套格式，兼容阿里云百炼等国内API）
     content_parts = [
-        {"type": "text", "text": "请识别这张截图中的功能："},
+        {"type": "text", "text": user_prompt},
         {
             "type": "image_url",
             "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
@@ -156,6 +157,7 @@ async def _recognize_single_image(
     system_prompt: str,
     callback_print=None,
     max_retry: int = 2,
+    user_prompt: str = "请识别这张截图中的功能：",
 ) -> str:
     """识别单张图片，支持重试"""
     image_name = Path(image_path).name
@@ -167,7 +169,8 @@ async def _recognize_single_image(
 
         result = await _call_vision_api(
             session, semaphore, api_key, api_url, model_name,
-            image_path, system_prompt, callback_print, attempt
+            image_path, system_prompt, callback_print, attempt,
+            user_prompt=user_prompt,
         )
 
         if not result.startswith(("[ERROR", "[EXCEPTION")):
@@ -190,6 +193,8 @@ async def recognize_images_async(
     api_url: str,
     model_name: str,
     callback_print=None,
+    custom_system_prompt=None,
+    custom_user_prompt=None,
 ) -> str:
     """
     异步识别文件夹中的所有截图，返回带层级缩进的 TXT 文本。
@@ -227,11 +232,15 @@ async def recognize_images_async(
     print(f"找到 {len(image_files)} 张图片")
     print("")
 
-    # 构建系统提示词
-    system_prompt = SYSTEM_PROMPT.format(
+    # 构建系统提示词（优先使用自定义）
+    prompt_template = custom_system_prompt if custom_system_prompt else SYSTEM_PROMPT
+    system_prompt = prompt_template.format(
         system_name=system_name,
         system_desc=system_desc,
     )
+
+    # 用户提示词
+    user_prompt = custom_user_prompt if custom_user_prompt else "请识别这张截图中的功能："
 
     # 并发控制
     semaphore = asyncio.Semaphore(5)
@@ -245,7 +254,8 @@ async def recognize_images_async(
 
             result = await _recognize_single_image(
                 session, semaphore, api_key, api_url, model_name,
-                image_path, system_prompt, callback_print
+                image_path, system_prompt, callback_print,
+                user_prompt=user_prompt,
             )
 
             all_results.append(result)
