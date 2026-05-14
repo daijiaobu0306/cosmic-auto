@@ -33,7 +33,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 # ==================== 配置 ====================
 EXCEL_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估模型（2026版）-党琪.xlsx")
-OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估输出.docx")
+OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估输出_新.docx")
 
 
 # ==================== 时序图渲染器（来自 flowchart_renderer.py）====================
@@ -268,28 +268,15 @@ def add_centered_picture(doc, image_path, width_inches=5.5):
 
 # ==================== 合并单元格处理 ====================
 
-def _find_data_start_row(sheet):
-    """扫描 D 列，找到第一个合并单元格所在的行号（即数据起始行）"""
-    for merged_range in sheet.merged_cells.ranges:
-        if merged_range.min_col == 4:  # D 列 = 第4列
-            return merged_range.min_row
-    # 如果 D 列没有合并，默认从第2行开始
-    return 2
-
-
 def read_excel_with_merged_cells(excel_path):
     """读取 Excel，处理合并单元格，返回行数据列表
 
     每行格式: (C值, D值, F值, I值, K值, L值, M值)
     合并单元格的空值会沿用上一行的非空值。
-    通过扫描 D 列合并区域自动跳过表头。
+    固定从第 2 行开始读取（第 1 行为表头）。
     """
     wb = openpyxl.load_workbook(excel_path, data_only=True)
     sheet = wb.active
-
-    # 自动检测数据起始行（D列第一个合并单元格所在行）
-    start_row = _find_data_start_row(sheet)
-    print(f"[读取] 检测到数据起始行：第 {start_row} 行")
 
     # 建立合并单元格查找表：对于每个合并区域，非左上角单元格的值 = 左上角单元格的值
     merge_map = {}  # (row, col) -> value
@@ -301,7 +288,7 @@ def read_excel_with_merged_cells(excel_path):
                     merge_map[(row, col)] = top_left_value
 
     data = []
-    for row_idx, row in enumerate(sheet.iter_rows(min_row=start_row), start=start_row):
+    for row_idx, row in enumerate(sheet.iter_rows(min_row=2), start=2):
         def get_cell(col_idx):
             """获取单元格值，优先从合并映射中取"""
             val = row[col_idx - 1].value  # openpyxl 行是0-based
@@ -363,7 +350,7 @@ def convert(excel_path, output_path):
     last_f = None
 
     # --- 5. 逐行处理 ---
-    for idx, (c_val, d_val, f_val, i_val, k_val, l_val, m_val) in enumerate(data):
+    for c_val, d_val, f_val, i_val, k_val, l_val, m_val in data:
         process_name = str(f_val).strip() if f_val else ""
 
         # === 二级标题（C列变化）===
