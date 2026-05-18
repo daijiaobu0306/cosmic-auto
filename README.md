@@ -27,6 +27,8 @@ src/
 │   ├── llm_field_gen.py            # LLM 数据字段生成（M 列 + DDL 辅助）
 │   ├── ai_recognize.py             # AI 识图 → TXT
 │   ├── txt_to_excel.py             # TXT → Excel（含合并单元格）
+│   ├── excel_to_word.py            # Excel → Word（纯转换逻辑）
+│   ├── excel_to_word_flow.py       # Excel → Word + 流程图（纯转换逻辑）
 │   ├── ddl_parser.py               # DDL 解析
 │   ├── flowchart_renderer.py       # 纯 Python 时序图渲染（Pillow）
 │   └── config_store.py             # 全局配置单例
@@ -295,6 +297,56 @@ def resizeEvent(self, event):
 
 **适用场景**：任何需要标题在整个窗口内居中、同时同行有固定宽度控件（按钮等）的情况。
 
+### 2. Worker 与 Core 职责混淆：业务逻辑不能写在 Worker 里
+
+**场景**：AI 辅助开发时，容易将业务逻辑（数据处理、文件转换、格式生成）直接写在 Worker 文件中，导致 Core 层空洞、Worker 层臃肿。
+
+**错误示例**（重构前）：
+```
+workers/excel_to_word_worker.py    # 300+ 行，包含完整的 Excel→Word 转换逻辑
+workers/excel_to_word_flow_worker.py # 300+ 行，包含流程图生成 + Word 转换逻辑
+core/excel_to_word.py              # 不存在
+core/excel_to_word_flow.py         # 不存在
+```
+
+**根因**：AI 生成代码时，倾向于把所有逻辑放在一个文件里，没有严格遵循分层架构。如果 README 没有明确约束，后续维护者（包括 AI）会继续在 Worker 里堆积逻辑。
+
+**正确架构**：
+```
+core/excel_to_word.py             # 纯业务逻辑：读取 Excel → 解析 → 生成 Word
+core/excel_to_word_flow.py        # 纯业务逻辑：读取 Excel → 解析 → 生成流程图 → 生成 Word
+workers/excel_to_word_worker.py   # 仅 QThread 壳子：调用 core 函数，转发日志信号
+workers/excel_to_word_flow_worker.py # 仅 QThread 壳子：调用 core 函数，转发日志信号
+```
+
+**Worker 标准写法**：
+```python
+class YourWorker(QThread):
+    text_written = pyqtSignal(str)
+
+    def run(self):
+        # 重定向 stdout 以捕获日志
+        old_stdout = sys.stdout
+        sys.stdout = OutputRedirector(self._emit_output)
+        try:
+            # 调用 core 函数，业务逻辑零耦合
+            your_business_logic(
+                self.param1, self.param2,
+                callback_print=self._emit_output,
+            )
+        finally:
+            sys.stdout = old_stdout
+
+    def _emit_output(self, text):
+        self.text_written.emit(text)
+```
+
+**踩坑教训**：
+1. **Worker 只做两件事**：管理 QThread 生命周期 + 调用 core 函数
+2. **业务逻辑必须在 Core**：确保可独立测试、可复用、无 Qt 依赖
+3. **AI 生成代码后必须审查分层**：检查 Worker 文件是否超过 50 行（超过说明可能混入了业务逻辑）
+4. **README 必须明确约束**：在"添加新功能指南"中强调分层规则
+
 ## 依赖
 
 - Python 3.10+
@@ -303,8 +355,7 @@ def resizeEvent(self, event):
 ## 开发文档
 
 - **[PRD.md](docs/PRD.md)** — 产品需求文档
-- **[plan.md](docs/plan.md)** — 开发计划
 
 ---
 
-*最后更新：2026-05-09*
+*最后更新：2026-05-14*
