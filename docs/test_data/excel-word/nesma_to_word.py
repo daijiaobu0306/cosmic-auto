@@ -32,8 +32,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 # ==================== 配置 ====================
-EXCEL_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估模型2026版-v2.xlsx")
-OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估输出_新-v2.docx")
+EXCEL_PATH = os.path.join(os.path.dirname(__file__), "投资类项目-新一代全景观测平台-NESMA评估材料0521.xlsx")
+OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "NESMA评估输出_新-v3.docx")
 
 
 # ==================== 时序图渲染器（来自 flowchart_renderer.py）====================
