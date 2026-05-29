@@ -46,7 +46,10 @@ async def _call_llm_once(session, semaphore, api_key, model, url, prompt_text, a
                     data = await response.json()
                     return data["choices"][0]["message"]["content"].strip()
                 else:
-                    return f"[ERROR {response.status}]"
+                    # 读取响应体以获取详细的错误信息
+                    error_body = await response.text()
+                    error_msg = f"[ERROR {response.status}]: {error_body[:200]}"
+                    return error_msg
         except Exception as e:
             return f"[EXCEPTION: {str(e)}]"
 
@@ -61,6 +64,16 @@ async def _generate_unique_result(session, semaphore, api_key, model, url, origi
         if result.startswith(("[ERROR", "[EXCEPTION")):
             print(f"  ❌ {row_tag} 失败({elapsed:.1f}s): {result}")
             if attempt == MAX_RETRY:
+                # 最终失败时，输出详细的错误诊断信息
+                if result.startswith("[ERROR 404"):
+                    print(f"  💡 诊断提示: 404错误通常表示API端点URL不正确或模型名称不存在")
+                    print(f"  💡 请检查: 1) URL是否正确 2) 模型名称是否正确 3) API密钥是否有效")
+                elif result.startswith("[ERROR 401"):
+                    print(f"  💡 诊断提示: 401错误表示API密钥无效或已过期")
+                    print(f"  💡 请检查: API_KEY是否正确，是否已过期")
+                elif result.startswith("[ERROR 403"):
+                    print(f"  💡 诊断提示: 403错误表示没有权限访问该模型或端点")
+                    print(f"  💡 请检查: 1) 是否已开通该模型权限 2) API密钥权限是否足够")
                 return result
             await asyncio.sleep(0.5)
             continue
@@ -82,6 +95,21 @@ async def _generate_unique_result(session, semaphore, api_key, model, url, origi
     return final_result
 
 
+def _normalize_url(url: str) -> str:
+    """规范化API URL，自动补全缺失的路径"""
+    url = url.rstrip('/')
+    # 如果URL以 /v1 结尾，自动补全 /chat/completions
+    if url.endswith('/v1'):
+        url += '/chat/completions'
+    # 如果URL不包含 /chat/completions，尝试补全
+    elif '/chat/completions' not in url:
+        if '/v1/' in url or url.endswith('/v1'):
+            url = url.rstrip('/') + '/chat/completions'
+        else:
+            url = url + '/v1/chat/completions'
+    return url
+
+
 async def llm_field_gen_async(api_key, model, url, excel_file, output_file, callback_print, ddl_context=None, custom_system_prompt=None):
     """异步版本，供 QThread 调用"""
     seen_results = set()
@@ -90,6 +118,10 @@ async def llm_field_gen_async(api_key, model, url, excel_file, output_file, call
 
     print = callback_print
     overall_start = time.time()
+
+    # 规范化URL
+    url = _normalize_url(url)
+    print(f"🔗 API地址: {url}")
 
     print("📥 正在读取 Excel 文件...")
     t0 = time.time()
@@ -138,9 +170,37 @@ async def llm_field_gen_async(api_key, model, url, excel_file, output_file, call
         results = await asyncio.gather(*tasks)
         print(f"\n✅ 大模型调用完成，总耗时 {time.time() - t1:.1f} 秒")
 
+        # 统计错误结果并输出诊断提示
+        error_count = 0
+        error_types = {}
+        for r in results:
+            if isinstance(r, str) and r.startswith("[ERROR"):
+                error_count += 1
+                # 提取错误码
+                if "]" in r:
+                    error_code = r.split("]")[0] + "]"
+                    error_types[error_code] = error_types.get(error_code, 0) + 1
+
+        if error_count > 0:
+            print(f"\n⚠️ 发现 {error_count} 个生成失败的结果")
+            for error_code, count in error_types.items():
+                print(f"  {error_code}: {count} 次")
+            print(f"\n💡 诊断提示:")
+            if "[ERROR 404]" in error_types:
+                print("  404错误: API端点URL不正确或模型名称不存在")
+                print("  请检查: 1) URL是否正确 2) 模型名称是否正确 3) API密钥是否有效")
+            if "[ERROR 401]" in error_types:
+                print("  401错误: API密钥无效或已过期")
+                print("  请检查: API_KEY是否正确，是否已过期")
+            if "[ERROR 403]" in error_types:
+                print("  403错误: 没有权限访问该模型或端点")
+                print("  请检查: 1) 是否已开通该模型权限 2) API密钥权限是否足够")
+
     if df.shape[1] < 13:
         df = df.reindex(columns=df.columns.tolist() + [None])
-    df.iloc[:, 12] = results
+    # 确保results中的所有元素都是字符串类型，避免pandas类型警告
+    results_str = [str(r) if r is not None else "" for r in results]
+    df.iloc[:, 12] = results_str
 
     print(f"💾 正在保存文件...")
     df.to_excel(output_file, index=False, engine='openpyxl')

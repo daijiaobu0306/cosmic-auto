@@ -70,12 +70,15 @@ src/
        │   └─ TXT 生成 Excel (index 4)
        ├─ 编写中
        │   ├─ 自动填充 (index 5)
-       │   ├─ LLM 填充 (index 6)
-       │   └─ LLM 字段生成 (index 7)
+       │   └─ LLM 字段生成 (index 6)
        └─ 编写后
-           ├─ Excel 转 Word (index 8)
-           └─ Excel 转 Word（含流程图） (index 9)
+           ├─ Excel 转 Word (index 7)
+           └─ Excel 转 Word（含流程图） (index 8)
 ```
+
+> **变更记录 (2026-05-29)**：已移除"LLM 填充"功能（原 index 6），保留"LLM 字段生成"功能。两个功能存在重复，"LLM 字段生成"支持 DDL 辅助，功能更完善。
+> 
+> **回滚方法**：如需恢复"LLM 填充"功能，参考 `docs/CHANGELOG_LLM_FILL_REMOVAL.md`。
 
 **导航规则：**
 - 欢迎页：只有 Let's Go 按钮，进入功能目录
@@ -90,10 +93,9 @@ src/
 | 编写前 | AI 识图 | 截图 → 功能清单 TXT | page_ai_recognize.py | 模块2
 | 编写前 | TXT 生成 Excel | 功能清单 TXT → COSMIC Excel | page_txt_to_excel.py | 模块3
 | 编写中 | 自动填充 | 规则引擎填写 H/J/L 列 | page2_auto_fill.py | 模块4
-| 编写中 | LLM 填充 | 大模型填写 M 列 | page3_llm_fill.py | 模块5
-| 编写中 | LLM 字段生成 | 大模型填写 M 列（支持 DDL 辅助） | page_llm_field_gen.py | 模块6
-| 编写后 | Excel 转 Word | COSMIC Excel → Word 文档 | page4_excel_to_word.py | 模块7
-| 编写后 | Excel 转 Word（含流程图） | COSMIC Excel → Word + Mermaid 流程图 |   page_excel_to_word_flow.py | 模块8
+| 编写中 | LLM 字段生成 | 大模型填写 M 列（支持 DDL 辅助） | page_llm_field_gen.py | 模块5
+| 编写后 | Excel 转 Word | COSMIC Excel → Word 文档 | page4_excel_to_word.py | 模块6
+| 编写后 | Excel 转 Word（含流程图） | COSMIC Excel → Word + Mermaid 流程图 |   page_excel_to_word_flow.py | 模块7
 
 ## 添加新功能指南
 

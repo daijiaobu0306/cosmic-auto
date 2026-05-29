@@ -9,14 +9,13 @@ from .page_calculator import PageCalculator
 from .page_ai_recognize import PageAIRecognize
 from .page_txt_to_excel import PageTxtToExcel
 from .page2_auto_fill import Page2
-from .page3_llm_fill import Page3
 from .page4_excel_to_word import Page4
 from .page_llm_field_gen import PageLLMFieldGen
 from .page_excel_to_word_flow import PageExcelToWordFlow
 
 
 # 功能页面在 stacked_widget 中的 index，按目录顺序排列
-FEATURE_ORDER = [2, 3, 4, 5, 6, 7, 8, 9]
+FEATURE_ORDER = [2, 3, 4, 5, 6, 7, 8]
 
 
 class Navigator:
@@ -87,11 +86,7 @@ class MainWindow(QWidget):
         self.page_auto_fill = Page2(self.navigator, self._on_auto_fill_success)
         self.stacked.addWidget(self.page_auto_fill)
 
-        # 页面 6：LLM 填充
-        self.page_llm_fill = Page3(self.navigator)
-        self.stacked.addWidget(self.page_llm_fill)
-
-        # 页面 7：LLM 数据字段生成
+        # 页面 6：LLM 数据字段生成（LLM填充功能已移除，保留底层代码）
         self.page_llm_field_gen = PageLLMFieldGen(self.navigator)
         self.stacked.addWidget(self.page_llm_field_gen)
 
@@ -110,4 +105,4 @@ class MainWindow(QWidget):
 
     def _on_auto_fill_success(self):
         file_path = self.page_auto_fill.file_edit.text().strip()
-        self.page_llm_fill.set_input_file(file_path)
+        self.page_llm_field_gen.set_input_file(file_path)

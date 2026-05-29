@@ -75,5 +75,12 @@ class LLMFieldGenWorker(QThread):
                 self.ddl_context,
                 custom_system_prompt=self.custom_system_prompt,
             ))
+        except Exception as e:
+            # 捕获所有异常，输出到GUI而不是崩溃
+            self._throttled_printer.print(f"\n❌ 程序异常: {str(e)}")
+            self._throttled_printer.print("💡 请检查:")
+            self._throttled_printer.print("  1) 输出文件是否被其他程序打开（如Excel）")
+            self._throttled_printer.print("  2) 输入文件格式是否正确")
+            self._throttled_printer.print("  3) API配置是否正确")
         finally:
             self._throttled_printer._timer.stop()
