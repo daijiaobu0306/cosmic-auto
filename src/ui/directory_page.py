@@ -25,8 +25,8 @@ CATEGORIES = [
         ("LLM 字段生成", "大模型填写 M 列（支持 DDL 辅助）", 6),
     ]),
     ("编写后", [
-        ("Excel 转 Word", "COSMIC Excel → Word 文档", 8),
-        ("Excel 转 Word（含流程图）", "COSMIC Excel → Word 文档 + 自动流程图", 9),
+        ("Excel 转 Word", "COSMIC Excel → Word 文档", 7),
+        ("Excel 转 Word（含流程图）", "COSMIC Excel → Word 文档 + 自动流程图", 8),
     ]),
 ]
 
